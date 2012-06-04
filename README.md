@@ -4,8 +4,24 @@ galleriet
 ..gernerates a simple single-file html image gallery of a folder
 
 
-![Screenshot](https://github.com/pce/galleriet/raw/master/xslgallery.jpg) 
+BUILD
+-----
 
+cd to  galleriet/gallery
+```
+$ make
+```
+
+Make compiles executable binaries into the bin/Debug and bin/Release directory.
+The xsl file has to be in the same path as the binary.
+You can link to the gallery.xsl file of the source dir:
+
+```
+cd bin/Debug
+ln -s ../../gallery.xsl .
+# generate
+./gallery -m -o "/home/username/Pictures/folder-name/index.html" "/home/pce/Pictures/folder-name"
+```
 
 
 OPTIONS
@@ -25,14 +41,17 @@ EXAMPLES
 generating HTML (xslt)
 ```
 # generate html and medium sized images (keeps original files)
-./gallery /home/username/Pictures/picfolder -m -o /home/username/Pictures/picfolder/index.html
+./gallery -m -o "/home/username/Pictures/folder-name/index.html" "/home/pce/Pictures/folder-name"
+
 # view in browser
 xdg-open  /home/username/Pictures/picfolder/index.html
 ```
 
 
-Codeblocks 
-----------
+Code::blocks 
+------------
+
+gallery.cbp is a [Code::Blocks](http://codeblocks.org/) project file.
 
 Project build options -> Linker settings:
 ```
@@ -40,18 +59,15 @@ Project build options -> Linker settings:
 `xslt-config --libs`
 ```
 
-The xsl file has to be in the same path as the binary, 
-or you may link to the gallery.xsl file
 
-```
-cd bin/Debug
-ln -s ../../gallery.xsl .
-# generate
-./gallery -m -o "/home/username/Pictures/folder-name/index.html" "/home/pce/Pictures/folder-name"
-
-```
+![Screenshot](https://github.com/pce/galleriet/raw/master/xslgallery.jpg)
 
 
+Limitations
+-----------
+
+* no exif rotation
+* only jpg's are supported
 
 
 TODO
@@ -66,7 +82,24 @@ TODO
       filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);
   }
 * gd: generate thumbs for overview
+* addImageXml - use_relpath? name = basename(name) 
 * option: define xmlfile for xslt
 * option: supported fileformats - current pattern: *.jpg
 * fix warning "DOCBparser deprecated" with -lxml2
+
+
+Credits
+-------
+
+* [Libxslt](xmlsoft.org/xslt/) - the XSLT C library developed for the GNOME project
+* [GD](http://www.boutell.com/gd/) - open source code library for the dynamic creation of images  
+* progressbar: rosshemsley's blogpost
+
+
+
+Patches are welcome!
+
+
+
+
  

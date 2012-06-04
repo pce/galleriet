@@ -1,5 +1,5 @@
 /*
- * xsltgallery - html gallery generator
+ * galleriet - a xsltgallery
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  *
  */
 
-// TODO fix -o
-// ./gallery -m -o "/home/pce/Pictures/2012/06/lund-export/index.html" "/home/pce/Pictures/2012/06/lund-export"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,10 +63,10 @@ static void usage(const char *name)
     printf("Skip XML:    %s -x -o /home/user/Pictures/2011-07/index.html\n", name);
 }
 
-// int fileExists or access (Standardlib)
 static bool fileExists(char *filename)
 {
   FILE *fh;
+  // or access (Standardlib)
   if ((fh = fopen(filename, "r")) == NULL) {
     return(FALSE);
   }
@@ -76,7 +74,6 @@ static bool fileExists(char *filename)
   return(TRUE);
 }
 
-// progressbar by rosshemsley (index(x) of n, r=updaterate or 0(off))
 static void progressBar(int x, int n, int r, int w)
 {
     if ((r !=0) && (x % (n/r) != 0)) return;
