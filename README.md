@@ -1,7 +1,7 @@
 galleriet
 =========
 
-..gernerates a simple single-file html image gallery of a folder
+..generates a simple single-file html image gallery of a folder
 
 
 BUILD
@@ -91,13 +91,13 @@ TODO
 Credits
 -------
 
-* [Libxslt](xmlsoft.org/xslt/) - the XSLT C library developed for the GNOME project
+* [Libxslt](https://xmlsoft.org/xslt/) - the XSLT C library developed for the GNOME project
 * [GD](http://www.boutell.com/gd/) - open source code library for the dynamic creation of images  
 * progressbar: rosshemsley's blogpost
 
 
 
-Patches are welcome!
+*Patches are welcome!*
 
 
 
