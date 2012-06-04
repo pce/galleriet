@@ -4,7 +4,7 @@ galleriet
 ..gernerates a simple single-file html image gallery of a folder
 
 
-![Screenshot](:http://github.com/pce/galleriet/raw/master/xslgallery.jpg) 
+![Screenshot](:https://github.com/pce/galleriet/raw/master/xslgallery.jpg) 
 
 
 
