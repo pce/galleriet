@@ -1,0 +1,19 @@
+bin/*
+obj/*
+# codeblocks
+gallery.depend
+gallery.layout
+gallery.xml
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
