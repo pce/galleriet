@@ -1,7 +1,8 @@
 galleriet
 =========
 
-..generates a simple single-file html image gallery of a folder
+..generates a simple single-file html image gallery of a folder.
+
 
 
 BUILD
@@ -74,14 +75,8 @@ TODO
 ----
 
 * gd: Portrait: extract image EXIF (like http://libexif.sourceforge.net/ ) infos and rotate images
-* css rotate button (and save property): 
-  .rotate90 {
-      rotation: 90deg;
-      -webkit-transform: rotate(90deg);
-      -moz-transform: rotate(90deg);
-      filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);
-  }
 * gd: generate thumbs for overview
+* save rotate property
 * addImageXml - use_relpath? name = basename(name) 
 * option: define xmlfile for xslt
 * option: supported fileformats - current pattern: *.jpg

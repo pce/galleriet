@@ -12,7 +12,7 @@ images.push({filename:"<xsl:value-of select="filename"/>",title:"<xsl:apply-temp
           <xsl:value-of select="name"/>
         </title>
         <style type="text/css" media="all">
-        /**
+       /**
 	@section colors
 		#cccc00  mustard
 		#00cccc  mint
@@ -46,12 +46,48 @@ images.push({filename:"<xsl:value-of select="filename"/>",title:"<xsl:apply-temp
 
         .btn img { border:0px; vertical-align:middle; }
 
-        #btnback { float:left;}
-        #btnnext { float:left;clear:left; margin-top:20px}
+#btnback { float:left;}
+#btnnext { float:left;clear:left; margin-top:20px}
 
-        #gallery  { padding: 10px; font-size:11pt; font-family:Sans-Serif; font-weight: bold; }
-        #subtitle { margin-left:160px; margin-top:10px;font-size: 11pt; font-family: Sans-Serif;}
-        </style>
+#gallery  { padding: 10px; font-size:11pt; font-family:Sans-Serif; font-weight: bold; }
+#subtitle { margin-left:160px; margin-top:10px;font-size: 11pt; font-family: Sans-Serif;}
+        
+.rotate0 { 
+    -webkit-transform: rotate(0deg); 
+    -moz-transform: rotate(0deg); 
+    -o-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    rotation: 0deg;     
+    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=0); 
+}
+        
+.rotate90 { 
+    -webkit-transform: rotate(90deg); 
+    -moz-transform: rotate(90deg); 
+    -o-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    rotation: 90deg;     
+    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1); 
+}
+
+.rotate180 {
+    -webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    rotation: 180deg;     
+    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=2);
+}
+
+.rotate270 {
+    -webkit-transform: rotate(270deg);
+    -moz-transform: rotate(270deg);
+    -o-transform: rotate(270deg);
+    -ms-transform: rotate(270deg);
+    rotation: 270deg;     
+    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+}
+       </style>
         </head>
         <body>
         <div id="gallery">
@@ -67,103 +103,191 @@ images.push({filename:"<xsl:value-of select="filename"/>",title:"<xsl:apply-temp
             </div>
 
         </div>
-        <script>
-       	var images = [];
-	<xsl:apply-templates select="images/image"/>
-        // ---------------------------------------------------
-        // -- Class ImageGallery
-        // ---------------------------------------------------
+<script>
+"use strict";
 
-        var ImageGallery = function() {};
-        ImageGallery.prototype = {
-            imgs : [],
-            ptr : 0,
-            preloadImgs : {},
-            setImages : function(images) {
-                this.imgs = images;
-                return this;
-            },
-            pager : function(go) {
-                  if (go) {
-                    (this.ptr == this.imgs.length-1) ? this.ptr = 0 : this.ptr++;
-                  } else {
-                    (this.ptr == 0) ? this.ptr = this.imgs.length-1 : this.ptr--;
-                  }
-                  this.load();
-                },
-                isPlaying : false,
-                ID : 0,
-                animate : function(go) {
-                        if(!this.isPlaying &amp;&amp; go) {
-                          this.animId = setInterval(
-                                    (function(self) {
-                                        return function() {self.pager(1); } }
-                                    )(this),
-                                    5000
-                                );
-                          this.isPlaying = true;
-                          $('btnplay').style.backgroundColor = "#fff";
-                          $('btnstop').style.backgroundColor = "rgb(252, 206, 101)";
-                        } else {
-                          clearInterval(this.animId);
-                          this.isPlaying = false;
-                          $('btnstop').style.backgroundColor = "#fff";
-                          $('btnplay').style.backgroundColor = "rgb(252, 206, 101)";
-                        }
-                },
-                initialize : function() {
-                    this.margin = 140 + (40 * 2); // buttonwidth padding
-                    this.load();
-                },
-                load : function() {
-                    $('pic').src = this.imgs[this.ptr]["filename"];
-                    // @todo http://www.quirksmode.org/dom/w3c_cssom.html
-                    // $('pic').width = window.innerWidth - this.margin;
-                    $('subtitle').innerHTML = this.imgs[this.ptr]["title"];
-                    // this.preLoad();
-                },
-                preLoad:function() {
-                    var prevPtr = this.ptr++;
-                    if (typeof this.preloadImgs[prevPtr] == "undefined"
-                        &amp;&amp; typeof this.imgs[prevPtr] != "undefined") {
-                        this.preloadImgs[prevPtr] = new Image();
-                        this.preloadImgs[prevPtr].src = this.imgs[this.ptr]["filename"];
-                    }
+var images = [];
+<xsl:apply-templates select="images/image"/>
 
-                }
-            };
 
-        if (typeof $ == "undefined")
-            var $ = function(e) { if (e) return document.getElementById(e); };
-
-        window.onload = function () {
-            // $('gallerynav').style.display = 'none';
-            var ig = new ImageGallery();
-            ig.setImages(images);
-            $('btnback').onclick = function() { ig.pager(false);};
-            $('btnnext').onclick = function() { ig.pager(true);};
-            $('btnplay').onclick = function() { ig.animate(true);};
-            $('btnstop').onclick = function() { ig.animate(false);};
-            var handleOnKeyUp = function (evt) {
-                evt = (evt) ? evt : ((window.event) ? event : null);
-                if (evt) {
-                    switch (evt.keyCode) {
-            		case 37:
-                	// left
-                	$('btnback').click();
-                    break;
-            		case 39:
-                        // right
-                        $('btnnext').click();
-                        break;
-                    }
-                }
-            };
-            document.onkeyup = handleOnKeyUp;
-            ig.initialize();
-            ig.animate(1);
+// ---------------------------------------------------
+// -- Class ImageGallery
+// ---------------------------------------------------
+var ImageGallery = function (picId) {
+        this.picId = picId || "pic"
+};
+ImageGallery.prototype = {
+    imgs: [],
+    ptr: 0,
+    degree: 0,
+    preloadImgs: {},
+    setImages: function (images) {
+        this.imgs = images;
+        return this;
+    },
+    onKeyDownEvent: function (event) {
+        // trace(event);
+        event = event || window.event;
+        var key = event.keyCode;
+        switch (key) {
+        case 6:
+        case 8:
+        case 9:
+            break;
+        case 13:
+            // enter
+            break;
+        case 16:
+            // shift
+            break;
+        case 17:
+            // ctrl
+            break;
+        case 18:
+            // alt
+            break;
+        case 27:
+            //  escape
+            break;
+        case 32:
+            break;
+        case 37:
+            // left arrow
+            this.pager(false);
+            break;
+        case 38:
+            // (up arrow)
+            this.rotate();
+            break;
+        case 40:
+            // (down arrow)
+            break;
+        case 39:
+            // right arrow
+            this.pager(true);
+            break;
+        case 46:
+            // del
+            break;
+        default:
+            break;
         }
-        </script>
+        // this.update();
+    },
+    init:function() {
+        document.onkeydown=this.onKeyDownEvent.bind(this);
+		// document.onkeypress=this.onKeyPressEvent.bind(this);
+        this.margin = 140 + (40 * 2); // buttonwidth padding
+        this.load();
+    },
+    pager: function (go) {
+        if (go) {
+            (this.ptr == this.imgs.length - 1) ? this.ptr = 0 : this.ptr++;
+        } else {
+            (this.ptr == 0) ? this.ptr = this.imgs.length - 1 : this.ptr--;
+        }
+        this.load();
+    },
+    isPlaying: false,
+    ID: 0,
+    animate: function (go) {
+        if (!this.isPlaying && go) {
+            this.animId = setInterval(
+            (function (self) {
+                return function () {
+                    self.pager(1);
+                }
+            })(this), 5000);
+            this.isPlaying = true;
+            e('btnplay').style.backgroundColor = "#fff";
+            e('btnstop').style.backgroundColor = "rgb(252, 206, 101)";
+        } else {
+            clearInterval(this.animId);
+            this.isPlaying = false;
+            e('btnstop').style.backgroundColor = "#fff";
+            e('btnplay').style.backgroundColor = "rgb(252, 206, 101)";
+        }
+    },
+    load: function () {
+        e(this.picId).className = "rotate0";              
+        this.degree=0;
+        e(this.picId).src = this.imgs[this.ptr]["filename"];
+        // @todo http://www.quirksmode.org/dom/w3c_cssom.html
+        // e('pic').width = window.innerWidth - this.margin;
+        e('subtitle').innerHTML = this.imgs[this.ptr]["title"];
+        // this.preLoad();
+    },
+    preLoad: function () {
+        var prevPtr = this.ptr++;
+        if (typeof this.preloadImgs[prevPtr] == "undefined" && typeof this.imgs[prevPtr] != "undefined") {
+            this.preloadImgs[prevPtr] = new Image();
+            this.preloadImgs[prevPtr].src = this.imgs[this.ptr]["filename"];
+        }
+
+    },
+    rotate: function () {
+        var rotateclass;
+        switch (this.degree) {
+        case 90:
+            rotateclass = "rotate180";
+            this.degree=180;
+            break;
+        case 180:
+            rotateclass = "rotate270";
+            this.degree=270;
+            break;
+        case 270:
+            rotateclass = "rotate0";
+            this.degree=0;
+            break;
+        case 360:
+        case 0:
+            rotateclass = "rotate90";
+            this.degree=90;
+            break;
+        default:
+            rotateclass = "rotate0";            
+            this.degree=0;
+        }
+        e(this.picId).className = rotateclass;
+    }
+};
+
+// ----------------------------------
+
+if (typeof e == "undefined") var e = function (e) {
+        if (e) return document.getElementById(e);
+};
+
+window.onload = function () {
+    var kioskmode = false;    
+    // e('gallerynav').style.display = 'none';
+    var ig = new ImageGallery("pic");
+    ig.setImages(images);
+    e('btnback').onclick = function () {
+        ig.pager(false);
+    };
+    e('btnnext').onclick = function () {
+        ig.pager(true);
+    };
+    e('btnrotate').onclick = function () {
+        ig.rotate();
+    };
+    ig.init();
+    // start animation
+    if (kioskmode) {
+        e('btnplay').style.display="";
+        e('btnstop').style.display="";
+        e('btnplay').onclick = function () {
+            ig.animate(true);
+        };
+        e('btnstop').onclick = function () {
+            ig.animate(false);
+        };
+        ig.animate(1);
+    }
+}
+</script>
         </body>
     </html>
 </xsl:template>
