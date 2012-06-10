@@ -191,7 +191,7 @@ ImageGallery.prototype = {
     isPlaying: false,
     ID: 0,
     animate: function (go) {
-        if (!this.isPlaying && go) {
+        if (!this.isPlaying &amp;&amp; go) {
             this.animId = setInterval(
             (function (self) {
                 return function () {
@@ -219,7 +219,7 @@ ImageGallery.prototype = {
     },
     preLoad: function () {
         var prevPtr = this.ptr++;
-        if (typeof this.preloadImgs[prevPtr] == "undefined" && typeof this.imgs[prevPtr] != "undefined") {
+        if (typeof this.preloadImgs[prevPtr] == "undefined" &amp;&amp; typeof this.imgs[prevPtr] != "undefined") {
             this.preloadImgs[prevPtr] = new Image();
             this.preloadImgs[prevPtr].src = this.imgs[this.ptr]["filename"];
         }
