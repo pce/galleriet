@@ -6,20 +6,22 @@
 # xslt-config --libs 
 # pkg-config gtk+-2.0 --cflags
 # pkg-config gtk+-2.0 --libs
+# -lexif
 
 WORKDIR = `pwd`
 
 CC = gcc
 CXX = g++
 AR = ar
-LD = g++
+LD = gcc
+# LD = g++
 WINDRES = windres
 
 INC =  -I/usr/include/libxml2
 CFLAGS =  -Wall `pkg-config gtk+-2.0 --cflags`
 RESINC = 
 LIBDIR = -L/usr/lib 
-LIB =  -lgd -lxml2 -lxslt
+LIB =  -lgd -lxml2 -lxslt -lexif
 LDFLAGS =  `pkg-config gtk+-2.0 --libs` `xslt-config --libs`
 
 INC_DEBUG =  $(INC)

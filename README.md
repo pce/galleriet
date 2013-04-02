@@ -8,7 +8,11 @@ galleriet
 BUILD
 -----
 
-cd to  galleriet/gallery
+Libraries  
+`apt-get install libxslt1-dev libexif-dev libgd2-xpm-dev`
+
+
+cd to  galleriet/gallery  
 ```
 $ make
 ```
@@ -49,17 +53,6 @@ xdg-open  /home/username/Pictures/picfolder/index.html
 ```
 
 
-Code::blocks 
-------------
-
-gallery.cbp is a [Code::Blocks](http://codeblocks.org/) project file.
-
-Project build options -> Linker settings:
-```
-`pkg-config gtk+-2.0 --libs`
-`xslt-config --libs`
-```
-
 
 ![Screenshot](https://github.com/pce/galleriet/raw/master/xslgallery.jpg)
 
@@ -67,7 +60,7 @@ Project build options -> Linker settings:
 Limitations
 -----------
 
-* no exif rotation
+* no exif rotation "Orientation"
 * only jpg's are supported
 
 
@@ -88,6 +81,7 @@ Credits
 
 * [Libxslt](https://xmlsoft.org/xslt/) - the XSLT C library developed for the GNOME project
 * [GD](http://www.boutell.com/gd/) - open source code library for the dynamic creation of images  
+* [libexif](http://libexif.sourceforge.net/)
 * progressbar: rosshemsley's blogpost
 
 

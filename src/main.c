@@ -35,7 +35,7 @@
 #include <libxslt/xsltutils.h>
 #include <glob.h>
 #include <gd.h>
-
+#include <libexif/exif-data.h>
 
 #define JPEG_QUALITY 95
 
@@ -46,6 +46,16 @@
 #else
 #define trace(...)
 #endif
+
+#define EO_TOP_LEFT_SIDE	1
+#define EO_TOP_RIGHT_SIDE	2
+#define EO_BOT_RIGHT_SIDE	3
+#define EO_BOT_LEFT_SIDE	4
+#define EO_LEFT_SIDE_TOP	5
+#define EO_RIGHT_SIDE_TOP	6
+#define EO_RIGHT_SIDE_BOT	7
+#define EO_LEFT_SIDE_BOT	8
+
 
 typedef enum { FALSE=0, TRUE=1 } bool;
 
@@ -74,6 +84,17 @@ static bool fileExists(char *filename)
   return(TRUE);
 }
 
+static void trim_spaces(char *buf)
+{
+	char *s = buf-1;
+	for (; *buf; ++buf) {
+		if (*buf != ' ')
+		s = buf;
+	}
+	*++s = 0;
+}
+
+
 static void progressBar(int x, int n, int r, int w)
 {
     if ((r !=0) && (x % (n/r) != 0)) return;
@@ -88,6 +109,37 @@ static void progressBar(int x, int n, int r, int w)
        printf(" ");
     printf("]\n\33[1A\33[2K");
 }
+
+
+static void show_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
+{
+	/* See if this tag exists */
+	ExifEntry *entry = exif_content_get_entry(d->ifd[ifd],tag);
+	if (entry) {
+		char buf[1024];
+
+		/* Get the contents of the tag in human-readable form */
+		exif_entry_get_value(entry, buf, sizeof(buf));
+
+		/* Don't bother printing it if it's entirely blank */
+		trim_spaces(buf);
+		if (*buf) {
+			printf("%s: %s\n", exif_tag_get_name_in_ifd(tag,ifd), buf);
+		}
+	}
+}
+
+
+static short getOrientation(ExifData *d, ExifIfd ifd) 
+{
+	ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], EXIF_TAG_ORIENTATION);
+	if (entry) {
+		return exif_get_short(entry->data, exif_data_get_byte_order(d));
+	}
+	return 1;
+}
+
+
 
 static void generateAndSaveThumbnail(const char* filename, int w, int h)
 {
@@ -123,12 +175,36 @@ static void generateAndSaveThumbnail(const char* filename, int w, int h)
     gdImageDestroy(im_in);
 }
 
+gdImagePtr rotateImage(gdImagePtr dst, int height, int width, int orientation) 
+{
+	gdImagePtr tmp = NULL;
+	if (orientation == 8) {
+		tmp = gdImageCreateTrueColor(height, width);
+		gdImageCopyRotated(tmp, dst, height/2-1, width/2-1, 0, 0, width, height, 90);
+	}
+	else if (orientation == 6) {
+		tmp = gdImageCreateTrueColor(height, width);
+		gdImageCopyRotated(tmp, dst, height/2-1, width/2, 0, 0, width, height, 270);
+	}
+	// free some memory
+	// gdImageDestroy(dst);
+	// assign the target pointer to the rotated image
+	dst = tmp;
+	return dst;
+}
+
+
 static void generateAndSaveImage(const char* filename, const char* suffix, int w, int h)
 {
     char outfilename[FILENAME_MAX];
     int is_portrait = 0;
+    short orientation = 0;
+    int maxw = w;
+    int maxh = h;
     gdImagePtr im_out;
     gdImagePtr im_in;
+   	ExifData *ed;
+ 	ExifEntry *entry;
     FILE *out;
     FILE *in;
     snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
@@ -137,18 +213,67 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
     im_in = gdImageCreateFromJpeg(in);
     fclose(in);
 
-    if (gdImageSX(im_in) > gdImageSY(im_in)) {
-        // Landscape
-        h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
-    } else {
-        // Portrait
-        w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
-        is_portrait = 1;
+		
+	ed = exif_data_new_from_file(filename);
+	if (!ed) {
+		trace("no EXIF data in file %s\n", filename);
+        if (gdImageSX(im_in) > gdImageSY(im_in)) {
+			trace("Landscape %s\n", filename);
+			// Landscape
+			h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
+		} else {
+			trace("Portrait %s\n", filename);
+			// Portrait
+			w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
+			is_portrait = 1;
+		}
+	    im_out = gdImageCreateTrueColor(w, h);
+	    gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, gdImageSX(im_in), gdImageSY(im_in));
+	} else {
+		int curw = gdImageSX(im_in);;
+		int curh = gdImageSY(im_in);
+		orientation = getOrientation(ed, EXIF_IFD_0);
+		trace("orientation %d\n", orientation);
+		// show_tag(ed, EXIF_IFD_0, EXIF_TAG_ORIENTATION);
+		// show_tag(ed, EXIF_IFD_0, EXIF_TAG_ARTIST);
+		switch (orientation) {
+		case EO_TOP_LEFT_SIDE:
+		case EO_TOP_RIGHT_SIDE:
+		case EO_BOT_RIGHT_SIDE:
+		case EO_BOT_LEFT_SIDE:
+			// Landscape
+			h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
+			break;
+		case EO_LEFT_SIDE_TOP:
+		case EO_RIGHT_SIDE_TOP:
+		case EO_RIGHT_SIDE_BOT:
+		case EO_LEFT_SIDE_BOT:
+			// Portrait
+			if (gdImageSX(im_in) > gdImageSY(im_in)) {
+				// Landscape Values;
+				w = (h * gdImageSY(im_in)) / gdImageSX(im_in);
+				curw = gdImageSY(im_in);
+				curh = gdImageSX(im_in);
+			} else {
+				w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
+			}
+			trace("portrait %dx%d\n", w, h);
+			is_portrait = 1;
+			break;
+		default:
+			// Landscape
+			h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
+			break;
+		}
+	    exif_data_unref(ed);
+   	    im_out = gdImageCreateTrueColor(w, h);
+        gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, curw, curh);
+	}
+
+    if (is_portrait) {
+		trace("orientation portrait %s, %dx%d\n", filename, w, h);
+		im_out = rotateImage(im_out, w, h, orientation);
     }
-    im_out = gdImageCreateTrueColor(w, h);
-    if (is_portrait)
-        gdImageCopyRotated(im_out, im_in, ((float)gdImageSY(im_in))/2,((float)gdImageSX(im_in))/2, 0, 0, gdImageSX(im_in),gdImageSY(im_in),90);
-    gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, gdImageSX(im_in), gdImageSY(im_in));
     gdImageSharpen(im_out, 100);
     gdImageJpeg(im_out, out, JPEG_QUALITY);
 
