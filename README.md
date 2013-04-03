@@ -54,7 +54,7 @@ xdg-open  /home/username/Pictures/picfolder/index.html
 
 
 
-![Screenshot](https://github.com/pce/galleriet/raw/master/xslgallery.jpg)
+![Screenshot](https://github.com/pce/galleriet/raw/master/xslgalleriet.jpg)
 
 
 Limitations
