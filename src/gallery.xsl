@@ -20,7 +20,7 @@ images.push({filename:"<xsl:value-of select="filename"/>",title:"<xsl:apply-temp
         */
         /** @section  basic */
         html, body {
-            background: #444;
+			background: url("chrome://global/skin/media/imagedoc-darknoise.png") repeat scroll 0 0 #444444;
             color:#00cccc;
             font-family: Sans-Serif;
         }
@@ -94,12 +94,14 @@ images.push({filename:"<xsl:value-of select="filename"/>",title:"<xsl:apply-temp
 
             <a class="btn" id="btnback">previous</a>
             <a class="btn" id="btnnext">next</a>
+
             <img id="pic" src="" />
             <div id="subtitle"></div>
 
             <div id="gallerynav" >
                 <a class="btn" id="btnplay">play</a>
                 <a class="btn" id="btnstop">stop</a>
+				<a class="btn" id="btnrotate">o</a>
             </div>
 
         </div>
@@ -199,22 +201,22 @@ ImageGallery.prototype = {
                 }
             })(this), 5000);
             this.isPlaying = true;
-            e('btnplay').style.backgroundColor = "#fff";
-            e('btnstop').style.backgroundColor = "rgb(252, 206, 101)";
+            id('btnplay').style.backgroundColor = "#fff";
+            id('btnstop').style.backgroundColor = "rgb(252, 206, 101)";
         } else {
             clearInterval(this.animId);
             this.isPlaying = false;
-            e('btnstop').style.backgroundColor = "#fff";
-            e('btnplay').style.backgroundColor = "rgb(252, 206, 101)";
+            id('btnstop').style.backgroundColor = "#fff";
+            id('btnplay').style.backgroundColor = "rgb(252, 206, 101)";
         }
     },
     load: function () {
-        e(this.picId).className = "rotate0";              
+        id(this.picId).className = "rotate0";              
         this.degree=0;
-        e(this.picId).src = this.imgs[this.ptr]["filename"];
+        id(this.picId).src = this.imgs[this.ptr]["filename"];
         // @todo http://www.quirksmode.org/dom/w3c_cssom.html
-        // e('pic').width = window.innerWidth - this.margin;
-        e('subtitle').innerHTML = this.imgs[this.ptr]["title"];
+        // id('pic').width = window.innerWidth - this.margin;
+        id('subtitle').innerHTML = this.imgs[this.ptr]["title"];
         // this.preLoad();
     },
     preLoad: function () {
@@ -249,44 +251,44 @@ ImageGallery.prototype = {
             rotateclass = "rotate0";            
             this.degree=0;
         }
-        e(this.picId).className = rotateclass;
+        id(this.picId).className = rotateclass;
     }
 };
 
 // ----------------------------------
 
-if (typeof e == "undefined") var e = function (e) {
+if (typeof id == "undefined") var id = function (e) {
         if (e) return document.getElementById(e);
 };
 
 window.onload = function () {
     var kioskmode = false;    
-    // e('gallerynav').style.display = 'none';
+    // id('gallerynav').style.display = 'none';
     var ig = new ImageGallery("pic");
     ig.setImages(images);
-    e('btnback').onclick = function () {
+    id('btnback').onclick = function () {
         ig.pager(false);
     };
-    e('btnnext').onclick = function () {
+    id('btnnext').onclick = function () {
         ig.pager(true);
     };
-    e('btnrotate').onclick = function () {
+    id('btnrotate').onclick = function () {
         ig.rotate();
     };
     ig.init();
     // start animation
     if (kioskmode) {
-        e('btnplay').style.display="";
-        e('btnstop').style.display="";
-        e('btnplay').onclick = function () {
+        id('btnplay').style.display="";
+        id('btnstop').style.display="";
+        id('btnplay').onclick = function () {
             ig.animate(true);
         };
-        e('btnstop').onclick = function () {
+        id('btnstop').onclick = function () {
             ig.animate(false);
         };
         ig.animate(1);
     }
-}
+};
 </script>
         </body>
     </html>

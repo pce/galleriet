@@ -39,23 +39,22 @@
 
 #define JPEG_QUALITY 95
 
-// #define DEBUG
-
 #ifdef DEBUG
 #define trace(...) printf(__VA_ARGS__)
 #else
 #define trace(...)
 #endif
 
-#define EO_TOP_LEFT_SIDE	1
-#define EO_TOP_RIGHT_SIDE	2
-#define EO_BOT_RIGHT_SIDE	3
-#define EO_BOT_LEFT_SIDE	4
-#define EO_LEFT_SIDE_TOP	5
-#define EO_RIGHT_SIDE_TOP	6
-#define EO_RIGHT_SIDE_BOT	7
-#define EO_LEFT_SIDE_BOT	8
-
+static enum exif_orientations {
+	EO_TOP_LEFT_SIDE=1,
+	EO_TOP_RIGHT_SIDE,
+	EO_BOT_RIGHT_SIDE,
+	EO_BOT_LEFT_SIDE,
+	EO_LEFT_SIDE_TOP,
+	EO_RIGHT_SIDE_TOP,
+	EO_RIGHT_SIDE_BOT,
+	EO_LEFT_SIDE_BOT
+};
 
 typedef enum { FALSE=0, TRUE=1 } bool;
 
@@ -76,7 +75,6 @@ static void usage(const char *name)
 static bool fileExists(char *filename)
 {
   FILE *fh;
-  // or access (Standardlib)
   if ((fh = fopen(filename, "r")) == NULL) {
     return(FALSE);
   }
@@ -93,7 +91,6 @@ static void trim_spaces(char *buf)
 	}
 	*++s = 0;
 }
-
 
 static void progressBar(int x, int n, int r, int w)
 {
@@ -141,42 +138,10 @@ static short getOrientation(ExifData *d, ExifIfd ifd)
 
 
 
-static void generateAndSaveThumbnail(const char* filename, int w, int h)
+static gdImagePtr rotateImage(gdImagePtr dst, int height, int width, int orientation) 
 {
-    // @todo resizeFiler();
-    char outfilename[FILENAME_MAX];
-    gdImagePtr im_out;
-    gdImagePtr im_in;
-    FILE *out;
-    FILE *in;
-
-    snprintf(outfilename, sizeof(outfilename), "%s.thumb.jpg", filename);
-    in = fopen(filename, "r");
-    out = fopen(outfilename, "wb");
-    im_in = gdImageCreateFromJpeg(in);
-    fclose(in);
-
-    if (gdImageSX(im_in) > gdImageSY(im_in)) {
-        // Landscape
-        h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
-        trace("calculated new h:%d", h);
-    } else {
-        // Portrait
-        w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
-        trace("calculated new w:%d", w);
-    }
-    im_out = gdImageCreateTrueColor(w, h);
-    gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, gdImageSX(im_in), gdImageSY(im_in));
-    gdImageSharpen(im_out, 100);
-    gdImageJpeg(im_out, out, JPEG_QUALITY);
-
-    fclose(out);
-    gdImageDestroy(im_out);
-    gdImageDestroy(im_in);
-}
-
-gdImagePtr rotateImage(gdImagePtr dst, int height, int width, int orientation) 
-{
+	// 400x600
+	trace("h:%d,w:%d,o:%d\n", height, width, orientation);
 	gdImagePtr tmp = NULL;
 	if (orientation == 8) {
 		tmp = gdImageCreateTrueColor(height, width);
@@ -199,8 +164,6 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
     char outfilename[FILENAME_MAX];
     int is_portrait = 0;
     short orientation = 0;
-    int maxw = w;
-    int maxh = h;
     gdImagePtr im_out;
     gdImagePtr im_in;
    	ExifData *ed;
@@ -212,8 +175,7 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
     out = fopen(outfilename, "wb");
     im_in = gdImageCreateFromJpeg(in);
     fclose(in);
-
-		
+	
 	ed = exif_data_new_from_file(filename);
 	if (!ed) {
 		trace("no EXIF data in file %s\n", filename);
@@ -230,8 +192,8 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
 	    im_out = gdImageCreateTrueColor(w, h);
 	    gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, gdImageSX(im_in), gdImageSY(im_in));
 	} else {
-		int curw = gdImageSX(im_in);;
-		int curh = gdImageSY(im_in);
+		int srcw = gdImageSX(im_in);
+		int srch = gdImageSY(im_in);
 		orientation = getOrientation(ed, EXIF_IFD_0);
 		trace("orientation %d\n", orientation);
 		// show_tag(ed, EXIF_IFD_0, EXIF_TAG_ORIENTATION);
@@ -252,8 +214,8 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
 			if (gdImageSX(im_in) > gdImageSY(im_in)) {
 				// Landscape Values;
 				w = (h * gdImageSY(im_in)) / gdImageSX(im_in);
-				curw = gdImageSY(im_in);
-				curh = gdImageSX(im_in);
+				srcw = gdImageSY(im_in);
+				srch = gdImageSX(im_in);
 			} else {
 				w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
 			}
@@ -267,9 +229,8 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
 		}
 	    exif_data_unref(ed);
    	    im_out = gdImageCreateTrueColor(w, h);
-        gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, curw, curh);
+        gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, srcw, srch);
 	}
-
     if (is_portrait) {
 		trace("orientation portrait %s, %dx%d\n", filename, w, h);
 		im_out = rotateImage(im_out, w, h, orientation);

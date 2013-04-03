@@ -12,7 +12,7 @@ Libraries
 `apt-get install libxslt1-dev libexif-dev libgd2-xpm-dev`
 
 
-cd to  galleriet/gallery  
+cd to  galleriet/src  
 ```
 $ make
 ```
@@ -60,16 +60,15 @@ xdg-open  /home/username/Pictures/picfolder/index.html
 Limitations
 -----------
 
-* no exif rotation "Orientation"
 * only jpg's are supported
 
 
 TODO
 ----
 
-* gd: Portrait: extract image EXIF (like http://libexif.sourceforge.net/ ) infos and rotate images
+* gd: rotate images [gdImageCopyResampled](http://www.boutell.com/gd/manual2.0.28.html#gdImageCopyResampled)
 * gd: generate thumbs for overview
-* save rotate property
+* js: save rotate property in cookie
 * addImageXml - use_relpath? name = basename(name) 
 * option: define xmlfile for xslt
 * option: supported fileformats - current pattern: *.jpg
