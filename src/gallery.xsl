@@ -116,7 +116,7 @@ var images = [];
 // -- Class ImageGallery
 // ---------------------------------------------------
 var ImageGallery = function (picId) {
-        this.picId = picId || "pic"
+        this.picId = picId || "#pic"
 };
 ImageGallery.prototype = {
     imgs: [],
@@ -201,22 +201,22 @@ ImageGallery.prototype = {
                 }
             })(this), 5000);
             this.isPlaying = true;
-            id('btnplay').style.backgroundColor = "#fff";
-            id('btnstop').style.backgroundColor = "rgb(252, 206, 101)";
+            $('#btnplay').style.backgroundColor = "#fff";
+            $('#btnstop').style.backgroundColor = "rgb(252, 206, 101)";
         } else {
             clearInterval(this.animId);
             this.isPlaying = false;
-            id('btnstop').style.backgroundColor = "#fff";
-            id('btnplay').style.backgroundColor = "rgb(252, 206, 101)";
+            $('#btnstop').style.backgroundColor = "#fff";
+            $('#btnplay').style.backgroundColor = "rgb(252, 206, 101)";
         }
     },
     load: function () {
-        id(this.picId).className = "rotate0";              
+        $(this.picId).className = "rotate0";              
         this.degree=0;
-        id(this.picId).src = this.imgs[this.ptr]["filename"];
+        $(this.picId).src = this.imgs[this.ptr]["filename"];
         // @todo http://www.quirksmode.org/dom/w3c_cssom.html
-        // id('pic').width = window.innerWidth - this.margin;
-        id('subtitle').innerHTML = this.imgs[this.ptr]["title"];
+        // $('#pic').width = window.innerWidth - this.margin;
+        $('#subtitle').innerHTML = this.imgs[this.ptr]["title"];
         // this.preLoad();
     },
     preLoad: function () {
@@ -251,41 +251,43 @@ ImageGallery.prototype = {
             rotateclass = "rotate0";            
             this.degree=0;
         }
-        id(this.picId).className = rotateclass;
+        $(this.picId).className = rotateclass;
     }
 };
 
 // ----------------------------------
 
-if (typeof id == "undefined") var id = function (e) {
-        if (e) return document.getElementById(e);
-};
 
 window.onload = function () {
+	if (typeof window.$ == "undefined") { 
+		window.$ = function (s) {
+			return document.querySelector(s);
+		};
+	}
     var kioskmode = false;    
-    // id('gallerynav').style.display = 'none';
-    var ig = new ImageGallery("pic");
+    // $('#gallerynav').style.display = 'none';
+    var ig = new ImageGallery("#pic");
     ig.setImages(images);
-    id('btnback').onclick = function () {
+    $('#btnback').onclick = function () {
         ig.pager(false);
     };
-    id('btnnext').onclick = function () {
+    $('#btnnext').onclick = function () {
         ig.pager(true);
     };
-    id('btnrotate').onclick = function () {
+    $('#btnrotate').onclick = function () {
         ig.rotate();
     };
-    ig.init();
+    $('#btnplay').onclick = function () {
+        ig.animate(true);
+    };
+    $('#btnstop').onclick = function () {
+        ig.animate(false);
+    };
+	ig.init();
     // start animation
     if (kioskmode) {
-        id('btnplay').style.display="";
-        id('btnstop').style.display="";
-        id('btnplay').onclick = function () {
-            ig.animate(true);
-        };
-        id('btnstop').onclick = function () {
-            ig.animate(false);
-        };
+        $('#btnplay').style.display="";
+        $('#btnstop').style.display="";
         ig.animate(1);
     }
 };
