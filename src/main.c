@@ -48,7 +48,7 @@
 #define trace(...)
 #endif
 
-static enum exif_orientations {
+static enum {
 	EO_TOP_LEFT_SIDE=1,
 	EO_TOP_RIGHT_SIDE,
 	EO_BOT_RIGHT_SIDE,
@@ -57,7 +57,7 @@ static enum exif_orientations {
 	EO_RIGHT_SIDE_TOP,
 	EO_RIGHT_SIDE_BOT,
 	EO_LEFT_SIDE_BOT
-};
+} exif_orientations;
 
 typedef enum { FALSE=0, TRUE=1 } bool;
 
@@ -73,6 +73,13 @@ static void usage(const char *name)
     printf("             %s /home/user/Pictures \n", name);
     printf("Set Title:   %s -t \"07/2011\" /home/user/Pictures/2011-07 -o /home/user/Pictures/2011-07/index.html\n", name);
     printf("Skip XML:    %s -x -o /home/user/Pictures/2011-07/index.html\n", name);
+}
+
+
+char *basname(char *path)
+{
+    char *base = strrchr(path, '/');
+    return base ? base+1 : path;
 }
 
 static bool fileExists(char *filename)
@@ -141,7 +148,6 @@ static short getOrientation(ExifData *d, ExifIfd ifd)
 
 static gdImagePtr rotateImage(gdImagePtr dst, int height, int width, int orientation) 
 {
-	// 400x600
 	trace("h:%d,w:%d,o:%d\n", height, width, orientation);
 	gdImagePtr tmp = NULL;
 	if (orientation == 8) {
@@ -244,7 +250,7 @@ static void closeXml(FILE* fp)
 
 static void addImageXml(FILE* fp, char* name)
 {
-    /* todo : if (use_relpath) name = basename(name) */
+    if (TRUE) name = basname(name);
     fprintf (fp, "<image><filename>%s</filename><title><![CDATA[ %s ]]></title></image>\n", name, name);
 }
 
