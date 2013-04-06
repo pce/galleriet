@@ -62,12 +62,13 @@ Limitations
 TODO
 ----
 
+* make install: #ifdef RESOURCES_DIR and exists use it 
+* option: define xmlfile for xslt
+* generate xml in pwd?
 * gd: generate thumbs for overview
 * js: save rotate property in cookie? 
 * js: url-hash history?
 * addImageXml - use_relpath? name = basename(name) 
-* define and use Resourcesdir (xml, xslt)
-* option: define xmlfile for xslt
 * option: supported fileformats - current pattern: *.jpg
 * fix warning "DOCBparser deprecated" with -lxml2
 

@@ -1,5 +1,7 @@
 WORKDIR = `pwd`
+
 APP_NAME=galleriet
+RESOURCES=gallery.xsl
 
 CC = gcc
 CXX = g++
@@ -89,12 +91,14 @@ clean_release:
 
 
 install:	all
+		@echo "[HINT]: you might need to be root or 'sudo make install'"
 		-mkdir -p $(INSTALL_BINDIR)
 		cp $(OUT_RELEASE) $(INSTALL_BINDIR)
+		-mkdir -p $(RESOURCES_DIR)
 		cp $(RESOURCES) $(RESOURCES_DIR)
 		@echo "------------------------------------------------------------------------"
 		@echo
-		@echo " executable '${TARGET}' went into ${BINDIR}"
+		@echo " executable '${APP_NAME}' went into ${INSTALL_BINDIR}"
 		@echo
 		@echo "------------------------------------------------------------------------"
 

@@ -43,6 +43,7 @@
 			<Add option="`xslt-config --libs`" />
 			<Add option="-lgd" />
 			<Add option="-lxml2" />
+			<Add option="-lexif" />
 		</Linker>
 		<Unit filename="gallery.xml" />
 		<Unit filename="gallery.xsl" />
