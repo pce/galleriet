@@ -11,7 +11,7 @@ BUILD
 Libraries  
 `apt-get install libxslt1-dev libexif-dev libgd2-xpm-dev`
 
-
+  
 cd to  galleriet/src  
 ```
 $ make
@@ -22,10 +22,7 @@ The xsl file has to be in the same path as the binary.
 You can link to the gallery.xsl file of the source dir:
 
 ```
-cd bin/Debug
-ln -s ../../gallery.xsl .
-# generate
-./gallery -m -o "/home/username/Pictures/folder-name/index.html" "/home/pce/Pictures/folder-name"
+$ bin/Release/galleriet -m -o  "/home/username/Pictures/folder/index.html" "/home/username/Pictures/folder"
 ```
 
 
@@ -46,12 +43,11 @@ EXAMPLES
 generating HTML (xslt)
 ```
 # generate html and medium sized images (keeps original files)
-./gallery -m -o "/home/username/Pictures/folder-name/index.html" "/home/pce/Pictures/folder-name"
+$ bin/Release/galleriet -m -o  "/home/username/Pictures/picfolder/index.html" "/home/username/Pictures/picfolder"
 
 # view in browser
 xdg-open  /home/username/Pictures/picfolder/index.html
 ```
-
 
 
 ![Screenshot](https://github.com/pce/galleriet/raw/master/xslgalleriet.jpg)
@@ -66,10 +62,11 @@ Limitations
 TODO
 ----
 
-* gd: rotate images [gdImageCopyResampled](http://www.boutell.com/gd/manual2.0.28.html#gdImageCopyResampled)
 * gd: generate thumbs for overview
-* js: save rotate property in cookie
+* js: save rotate property in cookie? 
+* js: url-hash history?
 * addImageXml - use_relpath? name = basename(name) 
+* define and use Resourcesdir (xml, xslt)
 * option: define xmlfile for xslt
 * option: supported fileformats - current pattern: *.jpg
 * fix warning "DOCBparser deprecated" with -lxml2
@@ -87,7 +84,3 @@ Credits
 
 *Patches are welcome!*
 
-
-
-
- 

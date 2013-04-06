@@ -38,6 +38,9 @@
 #include <libexif/exif-data.h>
 
 #define JPEG_QUALITY 95
+#define DEST_MAX_WIDTH 	800
+#define DEST_MAX_HEIGHT 600
+
 
 #ifdef DEBUG
 #define trace(...) printf(__VA_ARGS__)
@@ -82,16 +85,6 @@ static bool fileExists(char *filename)
   return(TRUE);
 }
 
-static void trim_spaces(char *buf)
-{
-	char *s = buf-1;
-	for (; *buf; ++buf) {
-		if (*buf != ' ')
-		s = buf;
-	}
-	*++s = 0;
-}
-
 static void progressBar(int x, int n, int r, int w)
 {
     if ((r !=0) && (x % (n/r) != 0)) return;
@@ -107,25 +100,33 @@ static void progressBar(int x, int n, int r, int w)
     printf("]\n\33[1A\33[2K");
 }
 
-
+/*
+static void trim_spaces(char *buf)
+{
+	char *s = buf-1;
+	for (; *buf; ++buf) {
+		if (*buf != ' ')
+		s = buf;
+	}
+	*++s = 0;
+}
+// usage: show_tag(ed, EXIF_IFD_0, EXIF_TAG_ORIENTATION); show_tag(ed, EXIF_IFD_0, EXIF_TAG_ARTIST);
 static void show_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
 {
-	/* See if this tag exists */
+	// See if this tag exists
 	ExifEntry *entry = exif_content_get_entry(d->ifd[ifd],tag);
 	if (entry) {
 		char buf[1024];
-
-		/* Get the contents of the tag in human-readable form */
+		// Get the contents of the tag in human-readable form 
 		exif_entry_get_value(entry, buf, sizeof(buf));
-
-		/* Don't bother printing it if it's entirely blank */
+		// Don't bother printing it if it's entirely blank 
 		trim_spaces(buf);
 		if (*buf) {
 			printf("%s: %s\n", exif_tag_get_name_in_ifd(tag,ifd), buf);
 		}
 	}
 }
-
+*/
 
 static short getOrientation(ExifData *d, ExifIfd ifd) 
 {
@@ -159,7 +160,7 @@ static gdImagePtr rotateImage(gdImagePtr dst, int height, int width, int orienta
 }
 
 
-static void generateAndSaveImage(const char* filename, const char* suffix, int w, int h)
+static void generateAndSaveImage(const char* filename, const char* suffix, int max_w, int max_h)
 {
     char outfilename[FILENAME_MAX];
     int is_portrait = 0;
@@ -167,7 +168,6 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
     gdImagePtr im_out;
     gdImagePtr im_in;
    	ExifData *ed;
- 	ExifEntry *entry;
     FILE *out;
     FILE *in;
     snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
@@ -176,64 +176,52 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int w
     im_in = gdImageCreateFromJpeg(in);
     fclose(in);
 	
+	int target_w = max_w;
+	int target_h = max_h;
+	
+	int src_w = gdImageSX(im_in);
+	int src_h = gdImageSY(im_in);
+
+	// is it portrait or landscape?
 	ed = exif_data_new_from_file(filename);
 	if (!ed) {
 		trace("no EXIF data in file %s\n", filename);
-        if (gdImageSX(im_in) > gdImageSY(im_in)) {
+		if (src_w > src_h) {
 			trace("Landscape %s\n", filename);
 			// Landscape
-			h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
+			target_h = (max_w * src_h) / src_w;
 		} else {
 			trace("Portrait %s\n", filename);
 			// Portrait
-			w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
+			target_w = (max_h * src_w) / src_h;
 			is_portrait = 1;
 		}
-	    im_out = gdImageCreateTrueColor(w, h);
-	    gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, gdImageSX(im_in), gdImageSY(im_in));
 	} else {
-		int srcw = gdImageSX(im_in);
-		int srch = gdImageSY(im_in);
 		orientation = getOrientation(ed, EXIF_IFD_0);
 		trace("orientation %d\n", orientation);
-		// show_tag(ed, EXIF_IFD_0, EXIF_TAG_ORIENTATION);
-		// show_tag(ed, EXIF_IFD_0, EXIF_TAG_ARTIST);
-		switch (orientation) {
-		case EO_TOP_LEFT_SIDE:
-		case EO_TOP_RIGHT_SIDE:
-		case EO_BOT_RIGHT_SIDE:
-		case EO_BOT_LEFT_SIDE:
-			// Landscape
-			h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
-			break;
-		case EO_LEFT_SIDE_TOP:
-		case EO_RIGHT_SIDE_TOP:
-		case EO_RIGHT_SIDE_BOT:
-		case EO_LEFT_SIDE_BOT:
-			// Portrait
-			if (gdImageSX(im_in) > gdImageSY(im_in)) {
-				// Landscape Values;
-				w = (h * gdImageSY(im_in)) / gdImageSX(im_in);
-				srcw = gdImageSY(im_in);
-				srch = gdImageSX(im_in);
-			} else {
-				w = (h * gdImageSX(im_in)) / gdImageSY(im_in);
-			}
-			trace("portrait %dx%d\n", w, h);
+		if (orientation == EO_RIGHT_SIDE_TOP 
+			|| orientation == EO_LEFT_SIDE_BOT) {
+			trace("Exif Portrait %s\n", filename);
+			target_w = (max_w * src_h) / src_h;
+			// src_w = gdImageSY(im_in);
+			// src_h = gdImageSX(im_in);
+			// target_w = (h * src_w) / src_h;
 			is_portrait = 1;
-			break;
-		default:
-			// Landscape
-			h = (w * gdImageSY(im_in)) / gdImageSX(im_in);
-			break;
+		} else {
+			trace("Exif Landscape %s\n", filename);
+			target_h = (max_w * src_h) / src_w;			
 		}
 	    exif_data_unref(ed);
-   	    im_out = gdImageCreateTrueColor(w, h);
-        gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, w, h, srcw, srch);
 	}
+	// create empty target image
+	im_out = gdImageCreateTrueColor(target_w, target_h);
+	// gdImageAntiAlias?
+	// copy and resize src image into target image
+	gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, target_w, target_h, src_w, src_h);
+
     if (is_portrait) {
-		trace("orientation portrait %s, %dx%d\n", filename, w, h);
-		im_out = rotateImage(im_out, w, h, orientation);
+		trace("orientation portrait %s, %dx%d\n", filename, target_w, target_h);
+		im_out = rotateImage(im_out, target_h, target_w, orientation);
     }
     gdImageSharpen(im_out, 100);
     gdImageJpeg(im_out, out, JPEG_QUALITY);
@@ -279,7 +267,7 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
         snprintf(name, sizeof(name), "%s", globbuf.gl_pathv[i]);
         if (strlen(suffix) > 1) {
             snprintf(name, sizeof(name), "%s.%s", globbuf.gl_pathv[i], suffix);
-            generateAndSaveImage(globbuf.gl_pathv[i], suffix, 800, 600);
+            generateAndSaveImage(globbuf.gl_pathv[i], suffix, DEST_MAX_WIDTH, DEST_MAX_HEIGHT);
         }
         addImageXml(fp, name);
     }
@@ -333,7 +321,6 @@ main(int argc, char **argv)
             } else if (argv[1][1] == 'n') {
                 snprintf(thumbnail, sizeof(thumbnail), "%s", argv[2]);
                 // assume valid filename
-                // generateAndSaveThumbnail(thumbnail, 320, 240);
                 generateAndSaveImage(thumbnail, "m.jpg", 320, 240);
                 argv++;
                 argc--;

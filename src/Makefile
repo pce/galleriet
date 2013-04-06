@@ -1,11 +1,12 @@
 WORKDIR = `pwd`
+APP_NAME=galleriet
 
 CC = gcc
 CXX = g++
 AR = ar
 LD = gcc
 # LD = g++
-WINDRES = windres
+STRIP=strip
 
 INC =  -I/usr/include/libxml2
 # xslt-config --cflags
@@ -14,6 +15,8 @@ RESINC =
 LIBDIR = -L/usr/lib 
 LIB =  -lgd -lxml2 -lxslt -lexif
 LDFLAGS =  `pkg-config gtk+-2.0 --libs` `xslt-config --libs`
+INSTALL_BINDIR=/usr/bin
+RESOURCES_DIR=/usr/share/$(APP_NAME)
 
 INC_DEBUG =  $(INC)
 CFLAGS_DEBUG =  $(CFLAGS) -g -DDEBUG
@@ -24,7 +27,7 @@ LIB_DEBUG = $(LIB)
 LDFLAGS_DEBUG =  $(LDFLAGS) -lgd -lxml2
 OBJDIR_DEBUG = obj/Debug
 DEP_DEBUG = 
-OUT_DEBUG = bin/Debug/gallery
+OUT_DEBUG = bin/Debug/$(APP_NAME)
 
 INC_RELEASE =  $(INC)
 CFLAGS_RELEASE =  $(CFLAGS) -O2
@@ -35,7 +38,7 @@ LIB_RELEASE = $(LIB)
 LDFLAGS_RELEASE =  $(LDFLAGS) -s
 OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
-OUT_RELEASE = bin/Release/gallery
+OUT_RELEASE = bin/Release/$(APP_NAME)
 
 OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o
 
@@ -69,7 +72,8 @@ before_release:
 	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
 
 after_release: 
-
+	$(STRIP) $(OUT_RELEASE)
+	
 release: before_release out_release after_release
 
 out_release: $(OBJ_RELEASE) $(DEP_RELEASE)
@@ -82,6 +86,19 @@ clean_release:
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)
 	rm -rf bin/Release
 	rm -rf $(OBJDIR_RELEASE)
+
+
+install:	all
+		-mkdir -p $(INSTALL_BINDIR)
+		cp $(OUT_RELEASE) $(INSTALL_BINDIR)
+		cp $(RESOURCES) $(RESOURCES_DIR)
+		@echo "------------------------------------------------------------------------"
+		@echo
+		@echo " executable '${TARGET}' went into ${BINDIR}"
+		@echo
+		@echo "------------------------------------------------------------------------"
+
+
 
 .PHONY: before_debug after_debug clean_debug before_release after_release clean_release
 
