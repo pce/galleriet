@@ -4,7 +4,7 @@ galleriet
 ..generates a simple single-file html image gallery of a folder.
 
 "galleriet" is swedish for "the gallery", 
-not that the definite article (et) is a suffix.
+the definite article "et" is expressed as a suffix.
 
 
 BUILD
