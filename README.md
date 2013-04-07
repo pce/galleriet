@@ -3,6 +3,8 @@ galleriet
 
 ..generates a simple single-file html image gallery of a folder.
 
+"galleriet" is swedish for "the gallery", 
+not that the definite article (et) is a suffix.
 
 
 BUILD
@@ -53,6 +55,23 @@ xdg-open  /home/username/Pictures/picfolder/index.html
 ![Screenshot](https://github.com/pce/galleriet/raw/master/xslgalleriet.jpg)
 
 
+**Apache**  
+
+Generate a password protected Directory  
+```
+$ htpasswd -b -c /var/www/files/passwd/passwords admin admin101
+```
+In /var/www/protected/.htaccess, or in httpd.conf inside a <Directory /var/www/protected> section.
+```
+AuthType Basic
+AuthName "Restricted Files"
+# (Following line optional)
+AuthBasicProvider file
+AuthUserFile /var/www/files/passwd/passwords
+Require user admin 
+```
+
+
 Limitations
 -----------
 
@@ -65,7 +84,7 @@ TODO
 * make install: #ifdef RESOURCES_DIR and exists use it 
 * option: define xmlfile for xslt
 * generate xml in pwd?
-* gd: generate thumbs for overview
+* generate thumbs for overview (index)
 * js: save rotate property in cookie? 
 * js: url-hash history?
 * addImageXml - use_relpath? name = basename(name) 

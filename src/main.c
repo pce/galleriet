@@ -128,11 +128,13 @@ static void createTransformedImage(const char* filename, const char* outfilename
 	if (status == MagickFalse) {
 		trace("Exception MagickReadImage\n");
 	}
-    MagickWand *trans_wand = MagickTransformImage(magick_wand, "0x0", geometry);
-    if (trans_wand == NULL || trans_wand == magick_wand) {
+	// resize with aspect ratio
+	MagickWand *trans_wand = MagickTransformImage(magick_wand, "0x0", geometry);
+	if (trans_wand == NULL || trans_wand == magick_wand) {
 		trace("Exception MagickTransformImage\n");
 		throwWandException(magick_wand);
 	}
+	
 	double degrees = 0;
 	if (orientation == 8) {
 		degrees = 270.0;
