@@ -10,13 +10,14 @@ LD = gcc
 # LD = g++
 STRIP=strip
 
-INC =  -I/usr/include/libxml2
+INC =  -I/usr/include/libxml2 
 # xslt-config --cflags
-CFLAGS =  -Wall `pkg-config gtk+-2.0 --cflags`  
+CFLAGS =  -Wall `pkg-config gtk+-2.0 --cflags` `pkg-config --cflags MagickWand` 
 RESINC = 
 LIBDIR = -L/usr/lib 
-LIB =  -lgd -lxml2 -lxslt -lexif
-LDFLAGS =  `pkg-config gtk+-2.0 --libs` `xslt-config --libs`
+#  -lMagickCore  -lgd 
+LIB =  -lxml2 -lxslt `pkg-config --libs MagickWand` -lexif
+LDFLAGS =  `pkg-config gtk+-2.0 --libs` 
 INSTALL_BINDIR=/usr/bin
 RESOURCES_DIR=/usr/share/$(APP_NAME)
 
@@ -26,7 +27,7 @@ RESINC_DEBUG =  $(RESINC)
 RCFLAGS_DEBUG =  $(RCFLAGS)
 LIBDIR_DEBUG =  $(LIBDIR)
 LIB_DEBUG = $(LIB)
-LDFLAGS_DEBUG =  $(LDFLAGS) -lgd -lxml2
+LDFLAGS_DEBUG =  $(LDFLAGS) -lxml2
 OBJDIR_DEBUG = obj/Debug
 DEP_DEBUG = 
 OUT_DEBUG = bin/Debug/$(APP_NAME)
@@ -97,11 +98,14 @@ install:	all
 		-mkdir -p $(RESOURCES_DIR)
 		cp $(RESOURCES) $(RESOURCES_DIR)
 		@echo "------------------------------------------------------------------------"
+		@echo " ____  ___ "
+		@echo "|| .|||/ || ${APP_NAME} "
+		@echo "||__|||__||"
+		@echo "|/__\|/__\|"
 		@echo
 		@echo " executable '${APP_NAME}' went into ${INSTALL_BINDIR}"
 		@echo
 		@echo "------------------------------------------------------------------------"
-
 
 
 .PHONY: before_debug after_debug clean_debug before_release after_release clean_release

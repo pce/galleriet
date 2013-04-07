@@ -34,12 +34,12 @@
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
 #include <glob.h>
-#include <gd.h>
 #include <libexif/exif-data.h>
+#include <wand/MagickWand.h>
 
 #define JPEG_QUALITY 95
 #define DEST_MAX_WIDTH 	800
-#define DEST_MAX_HEIGHT 600
+#define DEST_MAX_HEIGHT 800
 
 
 #ifdef DEBUG
@@ -47,17 +47,6 @@
 #else
 #define trace(...)
 #endif
-
-static enum {
-	EO_TOP_LEFT_SIDE=1,
-	EO_TOP_RIGHT_SIDE,
-	EO_BOT_RIGHT_SIDE,
-	EO_BOT_LEFT_SIDE,
-	EO_LEFT_SIDE_TOP,
-	EO_RIGHT_SIDE_TOP,
-	EO_RIGHT_SIDE_BOT,
-	EO_LEFT_SIDE_BOT
-} exif_orientations;
 
 typedef enum { FALSE=0, TRUE=1 } bool;
 
@@ -76,7 +65,7 @@ static void usage(const char *name)
 }
 
 
-char *basname(char *path)
+static char *basname(char *path)
 {
     char *base = strrchr(path, '/');
     return base ? base+1 : path;
@@ -107,35 +96,8 @@ static void progressBar(int x, int n, int r, int w)
     printf("]\n\33[1A\33[2K");
 }
 
-/*
-static void trim_spaces(char *buf)
-{
-	char *s = buf-1;
-	for (; *buf; ++buf) {
-		if (*buf != ' ')
-		s = buf;
-	}
-	*++s = 0;
-}
-// usage: show_tag(ed, EXIF_IFD_0, EXIF_TAG_ORIENTATION); show_tag(ed, EXIF_IFD_0, EXIF_TAG_ARTIST);
-static void show_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
-{
-	// See if this tag exists
-	ExifEntry *entry = exif_content_get_entry(d->ifd[ifd],tag);
-	if (entry) {
-		char buf[1024];
-		// Get the contents of the tag in human-readable form 
-		exif_entry_get_value(entry, buf, sizeof(buf));
-		// Don't bother printing it if it's entirely blank 
-		trim_spaces(buf);
-		if (*buf) {
-			printf("%s: %s\n", exif_tag_get_name_in_ifd(tag,ifd), buf);
-		}
-	}
-}
-*/
 
-static short getOrientation(ExifData *d, ExifIfd ifd) 
+static short getOrientation(ExifData *d, ExifIfd ifd)
 {
 	ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], EXIF_TAG_ORIENTATION);
 	if (entry) {
@@ -144,97 +106,79 @@ static short getOrientation(ExifData *d, ExifIfd ifd)
 	return 1;
 }
 
+static void throwWandException(MagickWand *wand)
+{ 
+	char *description;
 
+	ExceptionType severity;
 
-static gdImagePtr rotateImage(gdImagePtr dst, int height, int width, int orientation) 
+	description=MagickGetException(wand,&severity);
+	(void) fprintf(stderr,"%s %s %lu %s\n", GetMagickModule(), description);
+	description=(char *) MagickRelinquishMemory(description);
+}
+
+static void createTransformedImage(const char* filename, const char* outfilename, const char* geometry, short orientation) 
 {
-	trace("h:%d,w:%d,o:%d\n", height, width, orientation);
-	gdImagePtr tmp = NULL;
+	MagickWandGenesis();
+	MagickBooleanType status;
+	MagickWand *magick_wand = NULL;
+
+	magick_wand = NewMagickWand();
+	status = MagickReadImage(magick_wand, filename);
+	if (status == MagickFalse) {
+		trace("Exception MagickReadImage\n");
+	}
+    MagickWand *trans_wand = MagickTransformImage(magick_wand, "0x0", geometry);
+    if (trans_wand == NULL || trans_wand == magick_wand) {
+		trace("Exception MagickTransformImage\n");
+		throwWandException(magick_wand);
+	}
+	double degrees = 0;
 	if (orientation == 8) {
-		tmp = gdImageCreateTrueColor(height, width);
-		gdImageCopyRotated(tmp, dst, height/2-1, width/2-1, 0, 0, width, height, 90);
+		degrees = 270.0;
+	} else if (orientation == 6) {
+		degrees =  90.0;
 	}
-	else if (orientation == 6) {
-		tmp = gdImageCreateTrueColor(height, width);
-		gdImageCopyRotated(tmp, dst, height/2-1, width/2, 0, 0, width, height, 270);
+	if (degrees) {
+		trace("rotate %f°\n", degrees);
+		// "#ffffff"
+		status=MagickRotateImage(trans_wand, NewPixelWand(), degrees);
+		if (status == MagickFalse) {
+			trace("Exception MagickRotateImage\n");
+			throwWandException(trans_wand);
+		}
 	}
-	// free some memory
-	// gdImageDestroy(dst);
-	// assign the target pointer to the rotated image
-	dst = tmp;
-	return dst;
+	status=MagickWriteImages(trans_wand, outfilename, MagickTrue);
+	if (status == MagickFalse) {
+		trace("Exception MagickWriteImages\n");
+		throwWandException(trans_wand);
+	}
+	
+	trace("w:%d, h:%d\n", MagickGetImageWidth(trans_wand), MagickGetImageHeight(trans_wand));
+	
+	magick_wand=DestroyMagickWand(magick_wand);
+	trans_wand=DestroyMagickWand(trans_wand);
+	MagickWandTerminus();
 }
 
 
 static void generateAndSaveImage(const char* filename, const char* suffix, int max_w, int max_h)
 {
     char outfilename[FILENAME_MAX];
-    int is_portrait = 0;
+    char geometry[FILENAME_MAX];
     short orientation = 0;
-    gdImagePtr im_out;
-    gdImagePtr im_in;
-   	ExifData *ed;
-    FILE *out;
-    FILE *in;
-    snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
-    in = fopen(filename, "r");
-    out = fopen(outfilename, "wb");
-    im_in = gdImageCreateFromJpeg(in);
-    fclose(in);
+   	snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
+	snprintf(geometry, sizeof(geometry), "%dx%d", max_w, max_h);
 	
-	int target_w = max_w;
-	int target_h = max_h;
-	
-	int src_w = gdImageSX(im_in);
-	int src_h = gdImageSY(im_in);
-
-	// is it portrait or landscape?
-	ed = exif_data_new_from_file(filename);
+	// portrait or landscape?
+	ExifData *ed = exif_data_new_from_file(filename);
 	if (!ed) {
 		trace("no EXIF data in file %s\n", filename);
-		if (src_w > src_h) {
-			trace("Landscape %s\n", filename);
-			// Landscape
-			target_h = (max_w * src_h) / src_w;
-		} else {
-			trace("Portrait %s\n", filename);
-			// Portrait
-			target_w = (max_h * src_w) / src_h;
-			is_portrait = 1;
-		}
 	} else {
 		orientation = getOrientation(ed, EXIF_IFD_0);
 		trace("orientation %d\n", orientation);
-		if (orientation == EO_RIGHT_SIDE_TOP 
-			|| orientation == EO_LEFT_SIDE_BOT) {
-			trace("Exif Portrait %s\n", filename);
-			target_w = (max_w * src_h) / src_h;
-			// src_w = gdImageSY(im_in);
-			// src_h = gdImageSX(im_in);
-			// target_w = (h * src_w) / src_h;
-			is_portrait = 1;
-		} else {
-			trace("Exif Landscape %s\n", filename);
-			target_h = (max_w * src_h) / src_w;			
-		}
-	    exif_data_unref(ed);
 	}
-	// create empty target image
-	im_out = gdImageCreateTrueColor(target_w, target_h);
-	// gdImageAntiAlias?
-	// copy and resize src image into target image
-	gdImageCopyResampled(im_out, im_in, 0, 0, 0, 0, target_w, target_h, src_w, src_h);
-
-    if (is_portrait) {
-		trace("orientation portrait %s, %dx%d\n", filename, target_w, target_h);
-		im_out = rotateImage(im_out, target_h, target_w, orientation);
-    }
-    gdImageSharpen(im_out, 100);
-    gdImageJpeg(im_out, out, JPEG_QUALITY);
-
-    fclose(out);
-    gdImageDestroy(im_out);
-    gdImageDestroy(im_in);
+	createTransformedImage(filename, outfilename, geometry, orientation);
 }
 
 static void startXml(FILE* fp, char* name)

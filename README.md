@@ -8,8 +8,8 @@ galleriet
 BUILD
 -----
 
-Libraries  
-`apt-get install libxslt1-dev libexif-dev libgd2-xpm-dev`
+Libraries 
+`apt-get install libxslt1-dev libexif-dev libmagickwand-dev`
 
   
 cd to  galleriet/src  
