@@ -41,7 +41,6 @@
 #define DEST_MAX_WIDTH 	800
 #define DEST_MAX_HEIGHT 800
 
-#define DEFAULT_XSL_FILE "/usr/share/galleriet/gallery.xsl"
 
 
 #ifdef DEBUG
@@ -229,8 +228,7 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
     closeXml(fp);
 }
 
-    int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int nbparams = 0;
     bool hasxml = FALSE;
@@ -251,6 +249,10 @@ main(int argc, char **argv)
     xmlDocPtr doc, res;
     char *xsltfile = "./gallery.xsl";
     const char *xmlfile = "./gallery.xml";
+
+     char* default_xslfile = "/usr/share/galleriet/gallery.xsl";
+
+
 
     while (argc > 1) {
         if (argv[1][0] == '-') {
@@ -332,15 +334,16 @@ main(int argc, char **argv)
         generateXML(filename, pattern, title, suffix);
     }
 
-    if (!fileExists(xsltfile)) {
-        snprintf(xsltfile, sizeof(xsltfile), "%s", DEFAULT_XSL_FILE);
-
+    if (!fileExists(xsltfilename)) {
+        printf("`%s' file not found\n", xsltfilename);
+        snprintf(xsltfilename, sizeof(xsltfilename), "%s", default_xslfile);
+        printf("using `%s'\n", xsltfilename);
     }
 
     // printf("%s %s", xsltfile, xmlfile);
     xmlSubstituteEntitiesDefault(1);
     // xmlLoadExtDtdDefaultValue = 1;
-    cur = xsltParseStylesheetFile((const xmlChar *)xsltfile);
+    cur = xsltParseStylesheetFile((const xmlChar *)xsltfilename);
     doc = xmlParseFile(xmlfile);
     res = xsltApplyStylesheet(cur, doc, params);
     xsltSaveResultToFile(out, res, cur);
