@@ -41,6 +41,8 @@
 #define DEST_MAX_WIDTH 	800
 #define DEST_MAX_HEIGHT 800
 
+#define DEFAULT_XSL_FILE "/usr/share/galleriet/gallery.xsl"
+
 
 #ifdef DEBUG
 #define trace(...) printf(__VA_ARGS__)
@@ -73,12 +75,12 @@ static char *basname(char *path)
 
 static bool fileExists(char *filename)
 {
-  FILE *fh;
-  if ((fh = fopen(filename, "r")) == NULL) {
-    return(FALSE);
-  }
-  fclose(fh);
-  return(TRUE);
+    FILE *fh;
+    if ((fh = fopen(filename, "r")) == NULL) {
+        return(FALSE);
+    }
+    fclose(fh);
+    return(TRUE);
 }
 
 static void progressBar(int x, int n, int r, int w)
@@ -90,77 +92,77 @@ static void progressBar(int x, int n, int r, int w)
     // Show the percentage complete.
     printf("%3d%% [", (int)(rat*100) );
     for (x=0; x<c; x++)
-       printf("=");
+        printf("=");
     for (x=c; x<w; x++)
-       printf(" ");
+        printf(" ");
     printf("]\n\33[1A\33[2K");
 }
 
 
 static short getOrientation(ExifData *d, ExifIfd ifd)
 {
-	ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], EXIF_TAG_ORIENTATION);
-	if (entry) {
-		return exif_get_short(entry->data, exif_data_get_byte_order(d));
-	}
-	return 1;
+    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd], EXIF_TAG_ORIENTATION);
+    if (entry) {
+        return exif_get_short(entry->data, exif_data_get_byte_order(d));
+    }
+    return 1;
 }
 
 static void throwWandException(MagickWand *wand)
-{ 
-	char *description;
+{
+    char *description;
 
-	ExceptionType severity;
+    ExceptionType severity;
 
-	description=MagickGetException(wand,&severity);
-	(void) fprintf(stderr,"%s %s %lu %s\n", GetMagickModule(), description);
-	description=(char *) MagickRelinquishMemory(description);
+    description=MagickGetException(wand,&severity);
+    (void) fprintf(stderr,"%s %s %lu %s\n", GetMagickModule(), description);
+    description=(char *) MagickRelinquishMemory(description);
 }
 
-static void createTransformedImage(const char* filename, const char* outfilename, const char* geometry, short orientation) 
+static void createTransformedImage(const char* filename, const char* outfilename, const char* geometry, short orientation)
 {
-	MagickWandGenesis();
-	MagickBooleanType status;
-	MagickWand *magick_wand = NULL;
+    MagickWandGenesis();
+    MagickBooleanType status;
+    MagickWand *magick_wand = NULL;
 
-	magick_wand = NewMagickWand();
-	status = MagickReadImage(magick_wand, filename);
-	if (status == MagickFalse) {
-		trace("Exception MagickReadImage\n");
-	}
-	// resize with aspect ratio
-	MagickWand *trans_wand = MagickTransformImage(magick_wand, "0x0", geometry);
-	if (trans_wand == NULL || trans_wand == magick_wand) {
-		trace("Exception MagickTransformImage\n");
-		throwWandException(magick_wand);
-	}
-	
-	double degrees = 0;
-	if (orientation == 8) {
-		degrees = 270.0;
-	} else if (orientation == 6) {
-		degrees =  90.0;
-	}
-	if (degrees) {
-		trace("rotate %f°\n", degrees);
-		// "#ffffff"
-		status=MagickRotateImage(trans_wand, NewPixelWand(), degrees);
-		if (status == MagickFalse) {
-			trace("Exception MagickRotateImage\n");
-			throwWandException(trans_wand);
-		}
-	}
-	status=MagickWriteImages(trans_wand, outfilename, MagickTrue);
-	if (status == MagickFalse) {
-		trace("Exception MagickWriteImages\n");
-		throwWandException(trans_wand);
-	}
-	
-	trace("w:%d, h:%d\n", MagickGetImageWidth(trans_wand), MagickGetImageHeight(trans_wand));
-	
-	magick_wand=DestroyMagickWand(magick_wand);
-	trans_wand=DestroyMagickWand(trans_wand);
-	MagickWandTerminus();
+    magick_wand = NewMagickWand();
+    status = MagickReadImage(magick_wand, filename);
+    if (status == MagickFalse) {
+        trace("Exception MagickReadImage\n");
+    }
+    // resize with aspect ratio
+    MagickWand *trans_wand = MagickTransformImage(magick_wand, "0x0", geometry);
+    if (trans_wand == NULL || trans_wand == magick_wand) {
+        trace("Exception MagickTransformImage\n");
+        throwWandException(magick_wand);
+    }
+
+    double degrees = 0;
+    if (orientation == 8) {
+        degrees = 270.0;
+    } else if (orientation == 6) {
+        degrees =  90.0;
+    }
+    if (degrees) {
+        trace("rotate %f°\n", degrees);
+        // "#ffffff"
+        status=MagickRotateImage(trans_wand, NewPixelWand(), degrees);
+        if (status == MagickFalse) {
+            trace("Exception MagickRotateImage\n");
+            throwWandException(trans_wand);
+        }
+    }
+    status=MagickWriteImages(trans_wand, outfilename, MagickTrue);
+    if (status == MagickFalse) {
+        trace("Exception MagickWriteImages\n");
+        throwWandException(trans_wand);
+    }
+
+    trace("w:%d, h:%d\n", MagickGetImageWidth(trans_wand), MagickGetImageHeight(trans_wand));
+
+    magick_wand=DestroyMagickWand(magick_wand);
+    trans_wand=DestroyMagickWand(trans_wand);
+    MagickWandTerminus();
 }
 
 
@@ -169,18 +171,18 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int m
     char outfilename[FILENAME_MAX];
     char geometry[FILENAME_MAX];
     short orientation = 0;
-   	snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
-	snprintf(geometry, sizeof(geometry), "%dx%d", max_w, max_h);
-	
-	// portrait or landscape?
-	ExifData *ed = exif_data_new_from_file(filename);
-	if (!ed) {
-		trace("no EXIF data in file %s\n", filename);
-	} else {
-		orientation = getOrientation(ed, EXIF_IFD_0);
-		trace("orientation %d\n", orientation);
-	}
-	createTransformedImage(filename, outfilename, geometry, orientation);
+    snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
+    snprintf(geometry, sizeof(geometry), "%dx%d", max_w, max_h);
+
+    // portrait or landscape?
+    ExifData *ed = exif_data_new_from_file(filename);
+    if (!ed) {
+        trace("no EXIF data in file %s\n", filename);
+    } else {
+        orientation = getOrientation(ed, EXIF_IFD_0);
+        trace("orientation %d\n", orientation);
+    }
+    createTransformedImage(filename, outfilename, geometry, orientation);
 }
 
 static void startXml(FILE* fp, char* name)
@@ -227,7 +229,7 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
     closeXml(fp);
 }
 
-int
+    int
 main(int argc, char **argv)
 {
     int nbparams = 0;
@@ -247,7 +249,7 @@ main(int argc, char **argv)
     params[nbparams] = NULL;
     xsltStylesheetPtr cur = NULL;
     xmlDocPtr doc, res;
-    const char *xsltfile = "./gallery.xsl";
+    char *xsltfile = "./gallery.xsl";
     const char *xmlfile = "./gallery.xml";
 
     while (argc > 1) {
@@ -263,7 +265,7 @@ main(int argc, char **argv)
                 trace("htmlfilename:%s\n", htmlfilename);
                 argv++;
                 argc--;
-           }
+            }
             else if (argv[1][1] == 't') {
                 hastitle = TRUE;
                 // assume valid title
@@ -278,8 +280,6 @@ main(int argc, char **argv)
                 argc--;
             } else if (argv[1][1] == 'm') {
                 snprintf(suffix, sizeof(suffix), "%s", "m.jpg");
-                // argv++;
-                // argc--;
             } else if (argv[1][1] == 'x') {
                 trace("using ./gallery.xml");
                 hasxml = TRUE;
@@ -330,6 +330,11 @@ main(int argc, char **argv)
     if (!hasxml) {
         trace("generateXML(%s)\n", filename);
         generateXML(filename, pattern, title, suffix);
+    }
+
+    if (!fileExists(xsltfile)) {
+        snprintf(xsltfile, sizeof(xsltfile), "%s", DEFAULT_XSL_FILE);
+
     }
 
     // printf("%s %s", xsltfile, xmlfile);
