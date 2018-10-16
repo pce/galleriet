@@ -20,12 +20,10 @@ $ make
 ```
 
 Make compiles executable binaries into the bin/Debug and bin/Release directory.
-The xsl file has to be in the same path as the binary.
-You can link to the gallery.xsl file of the source dir:
 
-```
-$ bin/Release/galleriet -m -o  "/home/username/Pictures/folder/index.html" "/home/username/Pictures/folder"
-```
+The xsl file has to be in the same path as the binary.
+You can link to the gallery.xsl file of the source dir or put it in /usr/share/galleriet/gallery.xsl
+
 
 
 OPTIONS

@@ -35,21 +35,18 @@
 #include <libxslt/xsltutils.h>
 #include <glob.h>
 #include <libexif/exif-data.h>
-#include <wand/MagickWand.h>
+#include <MagickWand/MagickWand.h>
 
 #define JPEG_QUALITY 95
 #define DEST_MAX_WIDTH 	800
 #define DEST_MAX_HEIGHT 800
 
 
-
 #ifdef DEBUG
-#define trace(...) printf(__VA_ARGS__)
+#define TRACE(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
-#define trace(...)
+#define TRACE(...)
 #endif
-
-typedef enum { FALSE=0, TRUE=1 } bool;
 
 static void usage(const char *name)
 {
@@ -72,14 +69,14 @@ static char *basname(char *path)
     return base ? base+1 : path;
 }
 
-static bool fileExists(char *filename)
+static int fileExists(char *filename)
 {
     FILE *fh;
     if ((fh = fopen(filename, "r")) == NULL) {
-        return(FALSE);
+        return 0;
     }
     fclose(fh);
-    return(TRUE);
+    return 1;
 }
 
 static void progressBar(int x, int n, int r, int w)
@@ -127,15 +124,25 @@ static void createTransformedImage(const char* filename, const char* outfilename
     magick_wand = NewMagickWand();
     status = MagickReadImage(magick_wand, filename);
     if (status == MagickFalse) {
-        trace("Exception MagickReadImage\n");
+        TRACE("%s", "Exception MagickReadImage\n");
     }
+    
     // resize with aspect ratio
-    MagickWand *trans_wand = MagickTransformImage(magick_wand, "0x0", geometry);
-    if (trans_wand == NULL || trans_wand == magick_wand) {
-        trace("Exception MagickTransformImage\n");
-        throwWandException(magick_wand);
-    }
-
+    int width = MagickGetImageWidth(magick_wand);
+    int height = MagickGetImageHeight(magick_wand);
+    
+    TRACE("w:%zd, h:%zd\n", width, height);
+    
+    /*
+    Bessel   Blackman   Box
+    Catrom   CubicGaussian
+    Hanning  Hermite    Lanczos
+    Mitchell PointQuandratic
+    Sinc     Triangle
+    */
+    // MagickBooleanType 
+    MagickResizeImage(magick_wand, width, height, LanczosFilter);
+    
     double degrees = 0;
     if (orientation == 8) {
         degrees = 270.0;
@@ -143,24 +150,21 @@ static void createTransformedImage(const char* filename, const char* outfilename
         degrees =  90.0;
     }
     if (degrees) {
-        trace("rotate %f°\n", degrees);
+        TRACE("rotate %f°\n", degrees);
         // "#ffffff"
-        status=MagickRotateImage(trans_wand, NewPixelWand(), degrees);
+        status=MagickRotateImage(magick_wand, NewPixelWand(), degrees);
         if (status == MagickFalse) {
-            trace("Exception MagickRotateImage\n");
-            throwWandException(trans_wand);
+            TRACE("%s", "Exception MagickRotateImage\n");
+            throwWandException(magick_wand);
         }
     }
-    status=MagickWriteImages(trans_wand, outfilename, MagickTrue);
+    status=MagickWriteImages(magick_wand, outfilename, MagickTrue);
     if (status == MagickFalse) {
-        trace("Exception MagickWriteImages\n");
-        throwWandException(trans_wand);
+        TRACE("%s", "Exception MagickWriteImages\n");
+        throwWandException(magick_wand);
     }
 
-    trace("w:%d, h:%d\n", MagickGetImageWidth(trans_wand), MagickGetImageHeight(trans_wand));
-
     magick_wand=DestroyMagickWand(magick_wand);
-    trans_wand=DestroyMagickWand(trans_wand);
     MagickWandTerminus();
 }
 
@@ -176,10 +180,10 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int m
     // portrait or landscape?
     ExifData *ed = exif_data_new_from_file(filename);
     if (!ed) {
-        trace("no EXIF data in file %s\n", filename);
+        TRACE("no EXIF data in file %s\n", filename);
     } else {
         orientation = getOrientation(ed, EXIF_IFD_0);
-        trace("orientation %d\n", orientation);
+        TRACE("orientation %d\n", orientation);
     }
     createTransformedImage(filename, outfilename, geometry, orientation);
 }
@@ -197,7 +201,7 @@ static void closeXml(FILE* fp)
 
 static void addImageXml(FILE* fp, char* name)
 {
-    if (TRUE) name = basname(name);
+    if (1) name = basname(name);
     fprintf (fp, "<image><filename>%s</filename><title><![CDATA[ %s ]]></title></image>\n", name, name);
 }
 
@@ -213,9 +217,9 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
         abort();
     }
     startXml(fp, title);
-    glob(pattern, 0, NULL, &globbuf);
+    glob(pattern, GLOB_BRACE, NULL, &globbuf);
     for (i = 0; i < globbuf.gl_pathc; i++) {
-        trace("progress %d/%d\n",i, globbuf.gl_pathc);
+        TRACE("progress %d/%zd\n",i, globbuf.gl_pathc);
         progressBar(i, globbuf.gl_pathc, 0, 50);
         snprintf(name, sizeof(name), "%s", globbuf.gl_pathv[i]);
         if (strlen(suffix) > 1) {
@@ -231,9 +235,9 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
 int main(int argc, char **argv)
 {
     int nbparams = 0;
-    bool hasxml = FALSE;
-    bool hasout = FALSE;
-    bool hastitle = FALSE;
+    int hasxml = 0;
+    int hasout = 0;
+    int hastitle = 0;
     int result = 0;
     char pattern[FILENAME_MAX];
     char filename[FILENAME_MAX];
@@ -250,8 +254,7 @@ int main(int argc, char **argv)
     char *xsltfile = "./gallery.xsl";
     const char *xmlfile = "./gallery.xml";
 
-     char* default_xslfile = "/usr/share/galleriet/gallery.xsl";
-
+    char* default_xslfile = "/usr/share/galleriet/gallery.xsl";
 
 
     while (argc > 1) {
@@ -262,14 +265,14 @@ int main(int argc, char **argv)
             } else if (argv[1][1] == 'p') {
                 // sprintf(pattern,"%s",argv[2]);
             } else if (argv[1][1] == 'o') {
-                hasout = TRUE;
+                hasout = 1;
                 snprintf(htmlfilename, sizeof(htmlfilename), "%s", argv[2]);
-                trace("htmlfilename:%s\n", htmlfilename);
+                TRACE("htmlfilename:%s\n", htmlfilename);
                 argv++;
                 argc--;
             }
             else if (argv[1][1] == 't') {
-                hastitle = TRUE;
+                hastitle = 1;
                 // assume valid title
                 snprintf(title, sizeof(title), "%s", argv[2]);
                 argv++;
@@ -283,8 +286,8 @@ int main(int argc, char **argv)
             } else if (argv[1][1] == 'm') {
                 snprintf(suffix, sizeof(suffix), "%s", "m.jpg");
             } else if (argv[1][1] == 'x') {
-                trace("using ./gallery.xml");
-                hasxml = TRUE;
+                TRACE("using ./gallery.xml");
+                hasxml = 1;
             }
             argc--;
             argv++;
@@ -299,8 +302,8 @@ int main(int argc, char **argv)
     else if (getcwd(pattern, sizeof(pattern)) != NULL) {
         ;
     }
-    strcat(pattern, "/*.[jJ][pP][gG]");
-    trace("pattern: %s\n", pattern);
+    strcat(pattern, "/*.{CR2,jpeg,jpg,JPG}");
+    TRACE("pattern: %s\n", pattern);
     if (argc > 2) {
         snprintf(filename, sizeof(filename), "%s", argv[2]);
     }
@@ -314,10 +317,10 @@ int main(int argc, char **argv)
         snprintf(xsltfilename, sizeof(xsltfilename), "%s", xsltfile);
     }
 
-    if (!hastitle) snprintf(title, sizeof(title), "%s", "Photos 2011");
-    // trace("filename:%s\n", filename);
+    if (!hastitle) snprintf(title, sizeof(title), "%s", "Photos Hydra");
+    // TRACE("filename:%s\n", filename);
     if (hasout) {
-        trace("out: %s\n", htmlfilename);
+        TRACE("out: %s\n", htmlfilename);
         if (fileExists(htmlfilename))
             printf("overwrite file %s\n", htmlfilename);
         out = fopen(htmlfilename, "w+");
@@ -330,7 +333,7 @@ int main(int argc, char **argv)
     }
 
     if (!hasxml) {
-        trace("generateXML(%s)\n", filename);
+        TRACE("generateXML(%s)\n", filename);
         generateXML(filename, pattern, title, suffix);
     }
 
@@ -360,3 +363,4 @@ int main(int argc, char **argv)
     xmlCleanupParser();
     return(0);
 }
+
