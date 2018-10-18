@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/debugXML.h>
@@ -131,7 +132,7 @@ static void createTransformedImage(const char* filename, const char* outfilename
     int width = MagickGetImageWidth(magick_wand);
     int height = MagickGetImageHeight(magick_wand);
     
-    TRACE("w:%zd, h:%zd\n", width, height);
+    TRACE("w:%d, h:%d\n", width, height);
     
     /*
     Bessel   Blackman   Box
@@ -142,7 +143,8 @@ static void createTransformedImage(const char* filename, const char* outfilename
     */
     // MagickBooleanType 
     MagickResizeImage(magick_wand, width, height, LanczosFilter);
-    
+   
+    // workarround: some JPG's need to be rotated ...
     double degrees = 0;
     if (orientation == 8) {
         degrees = 270.0;
@@ -235,9 +237,9 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
 int main(int argc, char **argv)
 {
     int nbparams = 0;
-    int hasxml = 0;
-    int hasout = 0;
-    int hastitle = 0;
+    bool hasxml = false;
+    bool hasout = false;
+    bool hastitle = false;
     int result = 0;
     char pattern[FILENAME_MAX];
     char filename[FILENAME_MAX];
@@ -265,7 +267,7 @@ int main(int argc, char **argv)
             } else if (argv[1][1] == 'p') {
                 // sprintf(pattern,"%s",argv[2]);
             } else if (argv[1][1] == 'o') {
-                hasout = 1;
+                hasout = true;
                 snprintf(htmlfilename, sizeof(htmlfilename), "%s", argv[2]);
                 TRACE("htmlfilename:%s\n", htmlfilename);
                 argv++;
@@ -287,7 +289,7 @@ int main(int argc, char **argv)
                 snprintf(suffix, sizeof(suffix), "%s", "m.jpg");
             } else if (argv[1][1] == 'x') {
                 TRACE("using ./gallery.xml");
-                hasxml = 1;
+                hasxml = true;
             }
             argc--;
             argv++;
