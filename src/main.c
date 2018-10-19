@@ -133,7 +133,6 @@ static void createTransformedImage(const char* filename, const char* outfilename
     // resize with aspect ratio
     int width = MagickGetImageWidth(magick_wand);
     int height = MagickGetImageHeight(magick_wand);
-    // TRACE("w:%d, h:%d\n", width, height);
     double mf1;
     double mf2;
     double magnificationFactor;
@@ -145,7 +144,9 @@ static void createTransformedImage(const char* filename, const char* outfilename
     w = (int)(w * magnificationFactor);
     h = (int)(h * magnificationFactor);
 
-
+    TRACE("in  w:%d, h:%d\n", width, height);
+    TRACE("out w:%d, h:%d\n", w, h);
+ 
     /*
     available Filters:
     Bessel   
@@ -363,7 +364,7 @@ int main(int argc, char **argv)
     }
 
     if (!fileExists(xsltfilename)) {
-        printf("`%s' file not found\n", xsltfilename);
+        TRACE("`%s' file not found\n", xsltfilename);
         snprintf(xsltfilename, sizeof(xsltfilename), "%s", default_xslfile);
         printf("using `%s'\n", xsltfilename);
     }

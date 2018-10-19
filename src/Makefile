@@ -18,7 +18,7 @@ LIBDIR = -L/usr/lib
 #  -lMagickCore  -lgd 
 LIB =  -lxml2 -lxslt `pkg-config --libs MagickWand` -lexif -lm
 LDFLAGS =  `pkg-config gtk+-2.0 --libs` 
-INSTALL_BINDIR=/usr/bin
+INSTALL_BINDIR=/usr/local/bin
 RESOURCES_DIR=/usr/share/$(APP_NAME)
 
 INC_DEBUG =  $(INC)

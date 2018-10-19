@@ -46,6 +46,8 @@ images.push({filename:"<xsl:value-of select="filename"/>",title:"<xsl:apply-temp
 
         .btn img { border:0px; vertical-align:middle; }
 
+        #pic { width:84%; }
+
 #btnback { float:left;}
 #btnnext { float:left;clear:left; margin-top:20px}
 
