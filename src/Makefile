@@ -16,7 +16,7 @@ CFLAGS =  -Wall `pkg-config gtk+-2.0 --cflags` `pkg-config --cflags MagickWand`
 RESINC = 
 LIBDIR = -L/usr/lib 
 #  -lMagickCore  -lgd 
-LIB =  -lxml2 -lxslt `pkg-config --libs MagickWand` -lexif
+LIB =  -lxml2 -lxslt `pkg-config --libs MagickWand` -lexif -lm
 LDFLAGS =  `pkg-config gtk+-2.0 --libs` 
 INSTALL_BINDIR=/usr/bin
 RESOURCES_DIR=/usr/share/$(APP_NAME)

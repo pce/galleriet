@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <math.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/debugXML.h>
 #include <libxml/HTMLtree.h>
@@ -116,7 +117,8 @@ static void throwWandException(MagickWand *wand)
     description=(char *) MagickRelinquishMemory(description);
 }
 
-static void createTransformedImage(const char* filename, const char* outfilename, const char* geometry, short orientation)
+
+static void createTransformedImage(const char* filename, const char* outfilename, int w, int h, short orientation)
 {
     MagickWandGenesis();
     MagickBooleanType status;
@@ -131,18 +133,39 @@ static void createTransformedImage(const char* filename, const char* outfilename
     // resize with aspect ratio
     int width = MagickGetImageWidth(magick_wand);
     int height = MagickGetImageHeight(magick_wand);
-    
-    TRACE("w:%d, h:%d\n", width, height);
-    
+    // TRACE("w:%d, h:%d\n", width, height);
+    double mf1;
+    double mf2;
+    double magnificationFactor;
+
+    mf1 = w/width;
+    mf2 = h/height;
+
+    magnificationFactor = fmin(mf1, mf2);
+    w = (int)(w * magnificationFactor);
+    h = (int)(h * magnificationFactor);
+
+
     /*
-    Bessel   Blackman   Box
-    Catrom   CubicGaussian
-    Hanning  Hermite    Lanczos
-    Mitchell PointQuandratic
-    Sinc     Triangle
+    available Filters:
+    Bessel   
+    Blackman   
+    Box
+    Catrom   
+    CubicGaussian
+    Hanning  
+    Hermite    
+    Lanczos (enlarge)
+    Mitchell (shrink)
+    PointQuandratic
+    Sinc     
+    Triangle
     */
-    // MagickBooleanType 
-    MagickResizeImage(magick_wand, width, height, LanczosFilter);
+
+    status = MagickResizeImage(magick_wand, w, h, MitchellFilter);
+    if (status == MagickFalse) {
+        TRACE("%s", "Exception MagickResizeImage\n");
+    }
    
     // workarround: some JPG's need to be rotated ...
     double degrees = 0;
@@ -153,7 +176,6 @@ static void createTransformedImage(const char* filename, const char* outfilename
     }
     if (degrees) {
         TRACE("rotate %f°\n", degrees);
-        // "#ffffff"
         status=MagickRotateImage(magick_wand, NewPixelWand(), degrees);
         if (status == MagickFalse) {
             TRACE("%s", "Exception MagickRotateImage\n");
@@ -166,7 +188,7 @@ static void createTransformedImage(const char* filename, const char* outfilename
         throwWandException(magick_wand);
     }
 
-    magick_wand=DestroyMagickWand(magick_wand);
+    magick_wand = DestroyMagickWand(magick_wand);
     MagickWandTerminus();
 }
 
@@ -174,10 +196,8 @@ static void createTransformedImage(const char* filename, const char* outfilename
 static void generateAndSaveImage(const char* filename, const char* suffix, int max_w, int max_h)
 {
     char outfilename[FILENAME_MAX];
-    char geometry[FILENAME_MAX];
     short orientation = 0;
     snprintf(outfilename, sizeof(outfilename), "%s.%s", filename, suffix);
-    snprintf(geometry, sizeof(geometry), "%dx%d", max_w, max_h);
 
     // portrait or landscape?
     ExifData *ed = exif_data_new_from_file(filename);
@@ -187,7 +207,7 @@ static void generateAndSaveImage(const char* filename, const char* suffix, int m
         orientation = getOrientation(ed, EXIF_IFD_0);
         TRACE("orientation %d\n", orientation);
     }
-    createTransformedImage(filename, outfilename, geometry, orientation);
+    createTransformedImage(filename, outfilename, max_w, max_h, orientation);
 }
 
 static void startXml(FILE* fp, char* name)
@@ -211,6 +231,7 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
 {
     int i = 0;
     glob_t globbuf;
+    size_t name_len;
     char name[FILENAME_MAX];
     FILE *fp = NULL;
     fp = fopen(filename, "w+");
@@ -223,9 +244,11 @@ static void generateXML(char* filename, char* pattern, char* title, char* suffix
     for (i = 0; i < globbuf.gl_pathc; i++) {
         TRACE("progress %d/%zd\n",i, globbuf.gl_pathc);
         progressBar(i, globbuf.gl_pathc, 0, 50);
+        name_len = sizeof name;
         snprintf(name, sizeof(name), "%s", globbuf.gl_pathv[i]);
         if (strlen(suffix) > 1) {
-            snprintf(name, sizeof(name), "%s.%s", globbuf.gl_pathv[i], suffix);
+            name_len += 2;
+            snprintf(name, name_len, "%s.%s", globbuf.gl_pathv[i], suffix);
             generateAndSaveImage(globbuf.gl_pathv[i], suffix, DEST_MAX_WIDTH, DEST_MAX_HEIGHT);
         }
         addImageXml(fp, name);
